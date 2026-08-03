@@ -70,6 +70,21 @@
         </footer>
     </div>
 
+    <div id="setup-modal" class="setup-modal" style="display: none;">
+        <div class="setup-panel">
+            <h2>首次启动：下载 OCR 模型</h2>
+            <p class="setup-description">
+                应用需要从魔搭社区下载三个 OCR 模型。模型文件较大，请保持网络畅通。
+                如果已经下载过，会自动跳过。
+            </p>
+            <div id="setup-model-list" class="model-list"></div>
+            <div class="setup-actions">
+                <button id="btn-skip-download">跳过</button>
+                <button id="btn-start-download" class="primary">开始下载</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>

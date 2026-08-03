@@ -75,6 +75,9 @@ class Settings(BaseSettings):
     def glm_model_dir(self) -> Path:
         return self.models_dir / "glm-ocr"
 
+    # Model download
+    auto_download_models: bool = True
+
     # LLM
     llm_base_url: str = "https://api.openai.com/v1"
     llm_model: str = "gpt-4o"

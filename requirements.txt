@@ -11,3 +11,4 @@ openai>=1.12
 torch>=2.2.0
 transformers>=4.40.0
 huggingface-hub>=0.21.0
+modelscope>=1.18.0

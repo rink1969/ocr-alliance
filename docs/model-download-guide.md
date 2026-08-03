@@ -1,6 +1,8 @@
 # 模型下载与放置指南
 
-OCR Alliance 内置三个 OCR 模型目录，应用启动时会自动创建这些目录。模型权重文件**不会**随二进制包一起发布，需要按本指南下载并放到指定位置，或在 `.env` 中配置自定义路径。
+OCR Alliance 首次启动时会自动检测 OCR 模型是否存在。如果缺失，应用会从魔搭社区自动下载，并显示下载进度；已有模型时会直接跳过。
+
+模型权重文件**不会**随二进制包一起发布，但应用内置了自动下载逻辑。你也可以手动下载后放入对应目录，或在 `.env` 中关闭自动下载。
 
 ## 模型目录结构
 
@@ -15,38 +17,52 @@ models/
 
 > 如果你下载的是 GitHub Release 的二进制包，`models/` 位于可执行文件所在目录；如果你从源码运行，`models/` 位于项目根目录。
 
-## 使用二进制包
+## 自动下载（推荐）
 
-二进制包已经把 Python 运行依赖（PyTorch、Transformers 等）打包在内，你**不需要**再安装这些依赖，只需下载模型权重文件。
+启动应用后，前端会弹出模型下载窗口。点击“开始下载”后，应用会从魔搭社区自动拉取以下模型：
+
+| 模型 | 魔搭社区地址 |
+|------|-------------|
+| PaddleOCR-VL-1.6 | <https://modelscope.cn/models/PaddlePaddle/PaddleOCR-VL-1.6> |
+| HunyuanOCR | <https://modelscope.cn/models/Tencent-Hunyuan/HunyuanOCR> |
+| GLM-OCR | <https://modelscope.cn/models/ZhipuAI/GLM-OCR> |
+
+下载完成后，窗口会自动消失并进入主界面。后续启动时如果模型已存在，则不会再下载。
+
+### 关闭自动下载
+
+在 `.env` 中添加：
+
+```bash
+AUTO_DOWNLOAD_MODELS=false
+```
+
+关闭后，你需要按下方“手动下载”章节自行放置模型文件。
+
+## 手动下载
+
+如果你选择手动下载，可以从魔搭社区或 Hugging Face 获取模型文件，放入对应目录。
 
 ### PaddleOCR-VL-1.6
 
-PaddleOCR-VL-1.6 是一个 0.9B 参数的视觉语言模型，可通过 Transformers 加载。
-
-- Hugging Face：<https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6>
 - 魔搭社区：<https://modelscope.cn/models/PaddlePaddle/PaddleOCR-VL-1.6>
+- Hugging Face：<https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6>
 
-下载全部模型文件（如 `config.json`、`model.safetensors` 等）后放入：
-
-- `models/paddleocr-vl-1.6/`
+放入：`models/paddleocr-vl-1.6/`
 
 ### HunyuanOCR
 
-- Hugging Face：<https://huggingface.co/Tencent-Hunyuan/HunyuanOCR>
 - 魔搭社区：<https://modelscope.cn/models/Tencent-Hunyuan/HunyuanOCR>
+- Hugging Face：<https://huggingface.co/Tencent-Hunyuan/HunyuanOCR>
 
-下载全部模型文件后放入：
-
-- `models/hunyuanocr/`
+放入：`models/hunyuanocr/`
 
 ### GLM-OCR
 
-- Hugging Face：<https://huggingface.co/ZhipuAI/GLM-OCR>
 - 魔搭社区：<https://modelscope.cn/models/ZhipuAI/GLM-OCR>
+- Hugging Face：<https://huggingface.co/ZhipuAI/GLM-OCR>
 
-下载全部模型文件后放入：
-
-- `models/glm-ocr/`
+放入：`models/glm-ocr/`
 
 ## 从源码运行
 
@@ -56,7 +72,7 @@ PaddleOCR-VL-1.6 是一个 0.9B 参数的视觉语言模型，可通过 Transfor
 pip install -e "."
 ```
 
-然后再按上方“使用二进制包”章节的步骤下载并放置模型权重。
+然后再启动应用即可。模型会在首次启动时自动下载，或者你也可以按上方“手动下载”章节提前放置。
 
 ## LLM 统合模型
 

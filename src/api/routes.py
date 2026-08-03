@@ -8,6 +8,9 @@ from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
 
 from src.api.schemas import (
+    ModelDownloadRequest,
+    ModelDownloadResponse,
+    ModelsStatusResponse,
     ScanRequest,
     ScanResult,
     StartRequest,
@@ -19,6 +22,7 @@ from src.api.schemas import (
 from src.core.config import settings
 from src.core.database import Task, TaskStatus, db
 from src.core.file_utils import ensure_output_dirs, relative_path, scan_images
+from src.core.model_manager import MODEL_REPOS, model_manager
 from src.core.scheduler import ProcessingState, scheduler
 
 router = APIRouter()
@@ -144,4 +148,49 @@ async def get_settings() -> dict:
         "output_suffixes": settings.output_suffixes,
         "llm_model": settings.llm_model,
         "llm_base_url": settings.llm_base_url,
+        "auto_download_models": settings.auto_download_models,
     }
+
+
+@router.get("/models/status", response_model=ModelsStatusResponse)
+async def models_status() -> ModelsStatusResponse:
+    """Return the current status of all built-in OCR models."""
+    states = model_manager.get_status()
+    return ModelsStatusResponse(
+        models=[
+            {
+                "name": state.name,
+                "status": state.status.value,
+                "message": state.message,
+                "downloaded_bytes": state.downloaded_bytes,
+                "total_bytes": state.total_bytes,
+            }
+            for state in states
+        ],
+        all_ready=model_manager.all_ready(),
+    )
+
+
+@router.post("/models/download", response_model=ModelDownloadResponse)
+async def models_download(request: ModelDownloadRequest) -> ModelDownloadResponse:
+    """Start downloading one or all missing models from ModelScope."""
+    if request.model:
+        if request.model not in MODEL_REPOS:
+            raise HTTPException(status_code=400, detail="Unknown model name")
+        started = model_manager.start_download(request.model)
+        return ModelDownloadResponse(
+            started=started,
+            message=f"Started download for {request.model}" if started else "Already ready or downloading",
+        )
+
+    started = model_manager.start_missing_downloads()
+    return ModelDownloadResponse(
+        started=bool(started),
+        message=f"Started downloads for {', '.join(started)}" if started else "All models are ready",
+    )
+
+
+@router.get("/models/progress")
+async def models_progress() -> list[dict]:
+    """Return current download progress for all models."""
+    return model_manager.get_progress()

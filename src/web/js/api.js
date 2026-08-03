@@ -33,4 +33,7 @@ const api = {
     stop: () => apiPost('/stop', {}),
     status: () => apiGet('/status'),
     settings: () => apiGet('/settings'),
+    modelStatus: () => apiGet('/models/status'),
+    downloadModels: (model) => apiPost('/models/download', { model }),
+    modelProgress: () => apiGet('/models/progress'),
 };

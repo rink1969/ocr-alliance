@@ -49,3 +49,28 @@ class StartResponse(BaseModel):
 class StatusResponse(BaseModel):
     status: str
     progress: dict
+
+
+class ModelStatusItem(BaseModel):
+    name: str
+    status: str
+    message: str
+    downloaded_bytes: int
+    total_bytes: int | None
+
+
+class ModelsStatusResponse(BaseModel):
+    models: list[ModelStatusItem]
+    all_ready: bool
+
+
+class ModelDownloadRequest(BaseModel):
+    model: str | None = Field(
+        default=None,
+        description="Model name to download, or null to download all missing",
+    )
+
+
+class ModelDownloadResponse(BaseModel):
+    started: bool
+    message: str

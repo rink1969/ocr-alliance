@@ -50,3 +50,18 @@ def test_scan_directory_creates_tasks() -> None:
         tasks = list_resp.json()["tasks"]
         assert len(tasks) == 1
         assert tasks[0]["relative_path"] == "sub/doc.png"
+
+
+def test_models_status_endpoint() -> None:
+    """Models status endpoint should list all built-in OCR models."""
+    app = create_app()
+    client = TestClient(app)
+
+    resp = client.get("/api/models/status")
+    assert resp.status_code == 200
+    data = resp.json()
+    assert "models" in data
+    assert "all_ready" in data
+    assert len(data["models"]) == 3
+    names = {m["name"] for m in data["models"]}
+    assert names == {"paddleocr", "hunyuan", "glm"}

@@ -278,3 +278,92 @@ button.primary:hover:not(:disabled) {
     font-size: 12px;
     color: var(--text-muted);
 }
+
+/* Setup modal */
+.setup-modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.setup-panel {
+    background: var(--panel-bg);
+    border-radius: var(--radius);
+    width: 560px;
+    max-width: 90%;
+    max-height: 90%;
+    overflow: auto;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.setup-panel h2 {
+    margin: 0 0 8px 0;
+    font-size: 18px;
+}
+
+.setup-description {
+    color: var(--text-muted);
+    font-size: 13px;
+    margin-bottom: 20px;
+}
+
+.model-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+}
+
+.model-item {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px;
+}
+
+.model-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    font-weight: 500;
+}
+
+.model-status {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.model-status.ready { color: var(--success); }
+.model-status.error { color: var(--danger); }
+
+.model-message {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+    min-height: 18px;
+}
+
+.model-progress {
+    height: 6px;
+    background: #e5e7eb;
+    border-radius: 999px;
+    overflow: hidden;
+}
+
+.model-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--primary);
+    transition: width 0.3s;
+}
+
+.setup-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+}
