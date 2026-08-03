@@ -37,6 +37,9 @@ def build() -> None:
         "src.ocr.glm",
         "src.ocr.registry",
         "src.llm.unifier",
+        "clr",
+        "webview",
+        "pythonnet",
     ]
 
     cmd: list[str] = [
@@ -62,6 +65,9 @@ def build() -> None:
 
     for imp in hidden_imports:
         cmd.extend(["--hidden-import", imp])
+
+    for package in ("pythonnet", "webview"):
+        cmd.extend(["--collect-all", package])
 
     if system == "Darwin":
         cmd.extend(["--osx-bundle-identifier", "com.ocralliance.app"])
