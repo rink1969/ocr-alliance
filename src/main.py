@@ -5,11 +5,11 @@ from __future__ import annotations
 import socket
 import sys
 import threading
+import time
 import webbrowser
 from pathlib import Path
 
 import uvicorn
-import webview
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 
@@ -50,8 +50,52 @@ def run_server(host: str, port: int) -> None:
     uvicorn.run(app, host=host, port=port, log_level="info", access_log=False)
 
 
+def _run_webview(url: str) -> bool:
+    """Try to open a pywebview desktop window. Return True on success."""
+    try:
+        import webview
+    except Exception as exc:  # noqa: BLE001
+        print(f"pywebview import failed: {exc}")
+        return False
+
+    try:
+        window = webview.create_window(
+            title=settings.window_title,
+            url=url,
+            width=settings.window_width,
+            height=settings.window_height,
+            min_size=(1000, 700),
+        )
+
+        def get_platform() -> str:
+            return settings.platform
+
+        def open_external(target_url: str) -> None:
+            webbrowser.open(target_url)
+
+        window.expose(get_platform, open_external)
+        webview.start(debug=False)
+        return True
+    except Exception as exc:  # noqa: BLE001
+        print(f"pywebview start failed: {exc}")
+        return False
+
+
+def _run_browser_fallback(url: str) -> None:
+    """Open the app in the system default browser and keep the server alive."""
+    print("Falling back to system default browser.")
+    webbrowser.open(url)
+    print(f"OCR Alliance is running in your browser at {url}")
+    print("Press Ctrl+C to stop.")
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down.")
+
+
 def main() -> None:
-    """Entry point: ensure dirs, start server, open webview."""
+    """Entry point: ensure dirs, start server, open webview or browser."""
     settings.ensure_dirs()
 
     host = settings.api_host
@@ -67,24 +111,8 @@ def main() -> None:
     url = f"http://{host}:{port}"
     print(f"OCR Alliance server started at {url}")
 
-    window = webview.create_window(
-        title=settings.window_title,
-        url=url,
-        width=settings.window_width,
-        height=settings.window_height,
-        min_size=(1000, 700),
-    )
-
-    # Expose settings and platform info to frontend via pywebview
-    def get_platform() -> str:
-        return settings.platform
-
-    def open_external(url: str) -> None:
-        webbrowser.open(url)
-
-    window.expose(get_platform, open_external)
-
-    webview.start(debug=False)
+    if not _run_webview(url):
+        _run_browser_fallback(url)
 
 
 if __name__ == "__main__":
