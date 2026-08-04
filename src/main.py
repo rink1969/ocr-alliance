@@ -38,12 +38,19 @@ def find_free_port(host: str = "127.0.0.1", start: int = 18080) -> int:
             port += 1
 
 
+def _resolve_web_dir() -> Path:
+    """Return the directory containing the bundled web assets."""
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS) / "web"  # type: ignore[attr-defined]
+    return Path(__file__).resolve().parent / "web"
+
+
 def create_app() -> FastAPI:
     """Create the FastAPI application."""
     app = FastAPI(title="OCR Alliance API", version="0.1.0")
     app.include_router(router, prefix="/api")
 
-    web_dir = Path(__file__).resolve().parent / "web"
+    web_dir = _resolve_web_dir()
     logger.info("Static files directory: %s (exists=%s)", web_dir, web_dir.is_dir())
     if web_dir.is_dir():
         app.mount("/", StaticFiles(directory=str(web_dir), html=True), name="static")

@@ -22,6 +22,10 @@ def build() -> None:
     data_sep = ";" if system == "Windows" else ":"
 
     name = "OCRAlliance"
+    # PyInstaller extracts bundled data into sys._MEIPASS. Place web assets at
+    # the root of the _internal folder so the app can find them consistently
+    # regardless of where the entry script is located.
+    web_dest = "web"
     dist_path = root / "dist"
     work_path = root / "build"
 
@@ -60,7 +64,7 @@ def build() -> None:
         "--paths",
         str(src),
         "--add-data",
-        f"{web_dir}{data_sep}src/web",
+        f"{web_dir}{data_sep}{web_dest}",
     ]
 
     for imp in hidden_imports:
