@@ -44,8 +44,11 @@ def create_app() -> FastAPI:
     app.include_router(router, prefix="/api")
 
     web_dir = Path(__file__).resolve().parent / "web"
+    logger.info("Static files directory: %s (exists=%s)", web_dir, web_dir.is_dir())
     if web_dir.is_dir():
         app.mount("/", StaticFiles(directory=str(web_dir), html=True), name="static")
+    else:
+        logger.warning("Static files directory not found; web UI will not be served")
 
     return app
 
@@ -68,13 +71,13 @@ def run_server(host: str, port: int) -> None:
         raise
 
 
-def wait_for_server(url: str, timeout: float = 10.0) -> bool:
-    """Wait until the local server is accepting requests."""
+def wait_for_server(base_url: str, timeout: float = 10.0) -> bool:
+    """Wait until the local server is accepting API requests."""
     deadline = time.time() + timeout
     last_error = ""
     while time.time() < deadline:
         try:
-            with urllib.request.urlopen(url, timeout=1.0) as resp:
+            with urllib.request.urlopen(f"{base_url}/api/settings", timeout=1.0) as resp:
                 if resp.status == 200:
                     return True
         except Exception as exc:  # noqa: BLE001
