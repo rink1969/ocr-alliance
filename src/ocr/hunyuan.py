@@ -50,8 +50,7 @@ class HunyuanOCRAdapter(OCRAdapter):
 
         # Lazy import keeps import-time dependencies small.
         from PIL import Image
-        from transformers.models.auto.modeling_auto import AutoModelForVision2Seq
-        from transformers.models.auto.processing_auto import AutoProcessor
+        from transformers import AutoModelForVision2Seq, AutoProcessor
 
         if self._processor is None or self._model is None:
             self._processor = AutoProcessor.from_pretrained(
