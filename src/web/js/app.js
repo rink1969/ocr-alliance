@@ -33,6 +33,16 @@ const els = {
     setupModelList: document.getElementById('setup-model-list'),
     btnStartDownload: document.getElementById('btn-start-download'),
     btnSkipDownload: document.getElementById('btn-skip-download'),
+    settingsModal: document.getElementById('settings-modal'),
+    settingsBaseUrl: document.getElementById('settings-base-url'),
+    settingsModel: document.getElementById('settings-model'),
+    settingsApiKey: document.getElementById('settings-api-key'),
+    settingsTemperature: document.getElementById('settings-temperature'),
+    settingsMaxTokens: document.getElementById('settings-max-tokens'),
+    settingsMessage: document.getElementById('settings-message'),
+    btnTestLLM: document.getElementById('btn-test-llm'),
+    btnSaveSettings: document.getElementById('btn-save-settings'),
+    btnCancelSettings: document.getElementById('btn-cancel-settings'),
 };
 
 async function init() {
@@ -81,9 +91,86 @@ function finishInit(settings) {
     els.btnScan.addEventListener('click', onScan);
     els.btnStart.addEventListener('click', onStart);
     els.btnStop.addEventListener('click', onStop);
-    els.btnSettings.addEventListener('click', () => alert('设置面板待实现'));
+    els.btnSettings.addEventListener('click', openSettingsModal);
+    if (els.btnTestLLM) els.btnTestLLM.addEventListener('click', onTestLLM);
+    if (els.btnSaveSettings) els.btnSaveSettings.addEventListener('click', onSaveSettings);
+    if (els.btnCancelSettings) els.btnCancelSettings.addEventListener('click', closeSettingsModal);
 
     startStatusPolling();
+}
+
+function openSettingsModal() {
+    if (!els.settingsModal) return;
+    loadLLMSettings();
+    showSettingsMessage('', true);
+    els.settingsModal.style.display = 'flex';
+}
+
+function closeSettingsModal() {
+    if (els.settingsModal) els.settingsModal.style.display = 'none';
+}
+
+async function loadLLMSettings() {
+    if (!els.settingsBaseUrl) return;
+    try {
+        const s = await api.getLLMSettings();
+        els.settingsBaseUrl.value = s.llm_base_url || '';
+        els.settingsModel.value = s.llm_model || '';
+        els.settingsApiKey.value = '';
+        els.settingsTemperature.value = s.llm_temperature;
+        els.settingsMaxTokens.value = s.llm_max_tokens;
+    } catch (e) {
+        setStatus('加载设置失败: ' + e.message);
+    }
+}
+
+function collectSettingsBody() {
+    return {
+        llm_base_url: els.settingsBaseUrl.value.trim(),
+        llm_model: els.settingsModel.value.trim(),
+        llm_api_key: els.settingsApiKey.value.trim(),
+        llm_temperature: parseFloat(els.settingsTemperature.value),
+        llm_max_tokens: parseInt(els.settingsMaxTokens.value, 10),
+    };
+}
+
+function showSettingsMessage(text, success) {
+    if (!els.settingsMessage) return;
+    els.settingsMessage.textContent = text;
+    els.settingsMessage.className = 'settings-message ' + (success ? 'success' : 'error');
+}
+
+function setButtonLoading(btn, loading, text) {
+    if (!btn) return;
+    btn.disabled = loading;
+    btn.textContent = text;
+}
+
+async function onTestLLM() {
+    setButtonLoading(els.btnTestLLM, true, '测试中...');
+    try {
+        const body = collectSettingsBody();
+        const result = await api.testLLMConnection(body);
+        showSettingsMessage(result.message, result.success);
+    } catch (e) {
+        showSettingsMessage('测试失败: ' + e.message, false);
+    } finally {
+        setButtonLoading(els.btnTestLLM, false, '测试连接');
+    }
+}
+
+async function onSaveSettings() {
+    setButtonLoading(els.btnSaveSettings, true, '保存中...');
+    try {
+        const body = collectSettingsBody();
+        await api.updateLLMSettings(body);
+        showSettingsMessage('设置已保存', true);
+        setTimeout(closeSettingsModal, 800);
+    } catch (e) {
+        showSettingsMessage('保存失败: ' + e.message, false);
+    } finally {
+        setButtonLoading(els.btnSaveSettings, false, '保存');
+    }
 }
 
 function showSetupModal(models) {

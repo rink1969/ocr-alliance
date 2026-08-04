@@ -85,6 +85,41 @@
         </div>
     </div>
 
+    <div id="settings-modal" class="setup-modal" style="display: none;">
+        <div class="setup-panel">
+            <h2>设置</h2>
+            <p class="setup-description">配置用于统合 OCR 结果的大模型。</p>
+            <div class="form-group">
+                <label for="settings-base-url">Base URL</label>
+                <input type="text" id="settings-base-url" placeholder="https://api.openai.com/v1">
+            </div>
+            <div class="form-group">
+                <label for="settings-model">Model</label>
+                <input type="text" id="settings-model" placeholder="gpt-4o">
+            </div>
+            <div class="form-group">
+                <label for="settings-api-key">API Key</label>
+                <input type="password" id="settings-api-key" placeholder="留空保持不变">
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="settings-temperature">Temperature</label>
+                    <input type="number" id="settings-temperature" step="0.1" min="0" max="2">
+                </div>
+                <div class="form-group">
+                    <label for="settings-max-tokens">Max Tokens</label>
+                    <input type="number" id="settings-max-tokens" step="1" min="1">
+                </div>
+            </div>
+            <div id="settings-message" class="settings-message"></div>
+            <div class="setup-actions">
+                <button id="btn-test-llm">测试连接</button>
+                <button id="btn-save-settings" class="primary">保存</button>
+                <button id="btn-cancel-settings">取消</button>
+            </div>
+        </div>
+    </div>
+
     <script src="js/api.js"></script>
     <script src="js/app.js"></script>
 </body>

@@ -8,6 +8,10 @@ from fastapi import APIRouter, HTTPException, Response
 from fastapi.responses import FileResponse
 
 from src.api.schemas import (
+    LLMSettingsResponse,
+    LLMSettingsUpdateRequest,
+    LLMTestRequest,
+    LLMTestResponse,
     ModelDownloadRequest,
     ModelDownloadResponse,
     ModelsStatusResponse,
@@ -24,6 +28,8 @@ from src.core.database import Task, TaskStatus, db
 from src.core.file_utils import ensure_output_dirs, relative_path, scan_images
 from src.core.model_manager import MODEL_REPOS, model_manager
 from src.core.scheduler import ProcessingState, scheduler
+from src.core.settings_manager import mask_api_key, update_env
+from src.llm.tester import test_llm_connection
 
 router = APIRouter()
 
@@ -150,6 +156,50 @@ async def get_settings() -> dict:
         "llm_base_url": settings.llm_base_url,
         "auto_download_models": settings.auto_download_models,
     }
+
+
+@router.get("/settings/llm", response_model=LLMSettingsResponse)
+async def get_llm_settings() -> LLMSettingsResponse:
+    """Return LLM settings with the API key masked."""
+    return LLMSettingsResponse(
+        llm_base_url=settings.llm_base_url,
+        llm_model=settings.llm_model,
+        llm_api_key=mask_api_key(settings.llm_api_key),
+        llm_temperature=settings.llm_temperature,
+        llm_max_tokens=settings.llm_max_tokens,
+    )
+
+
+@router.post("/settings/llm", response_model=LLMSettingsResponse)
+async def update_llm_settings(request: LLMSettingsUpdateRequest) -> LLMSettingsResponse:
+    """Update LLM settings in .env and reload the global configuration."""
+    updates = {
+        "LLM_BASE_URL": request.llm_base_url,
+        "LLM_MODEL": request.llm_model,
+        "LLM_TEMPERATURE": str(request.llm_temperature),
+        "LLM_MAX_TOKENS": str(request.llm_max_tokens),
+    }
+    if request.llm_api_key:
+        updates["LLM_API_KEY"] = request.llm_api_key
+    update_env(updates)
+    settings.reload()
+    return LLMSettingsResponse(
+        llm_base_url=settings.llm_base_url,
+        llm_model=settings.llm_model,
+        llm_api_key=mask_api_key(settings.llm_api_key),
+        llm_temperature=settings.llm_temperature,
+        llm_max_tokens=settings.llm_max_tokens,
+    )
+
+
+@router.post("/settings/test-llm", response_model=LLMTestResponse)
+async def test_llm_settings(request: LLMTestRequest) -> LLMTestResponse:
+    """Test connectivity to the configured LLM."""
+    base_url = request.llm_base_url or settings.llm_base_url
+    model = request.llm_model or settings.llm_model
+    api_key = request.llm_api_key or settings.llm_api_key
+    success, message = test_llm_connection(base_url, model, api_key)
+    return LLMTestResponse(success=success, message=message)
 
 
 @router.get("/models/status", response_model=ModelsStatusResponse)

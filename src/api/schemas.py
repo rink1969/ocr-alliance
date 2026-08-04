@@ -74,3 +74,35 @@ class ModelDownloadRequest(BaseModel):
 class ModelDownloadResponse(BaseModel):
     started: bool
     message: str
+
+
+class LLMSettingsResponse(BaseModel):
+    llm_base_url: str
+    llm_model: str
+    llm_api_key: str = Field(
+        ..., description="Masked API key (e.g. sk-...abcd) or empty string"
+    )
+    llm_temperature: float
+    llm_max_tokens: int
+
+
+class LLMSettingsUpdateRequest(BaseModel):
+    llm_base_url: str
+    llm_model: str
+    llm_api_key: str = Field(
+        default="",
+        description="New API key. Empty string means keep the existing key.",
+    )
+    llm_temperature: float
+    llm_max_tokens: int
+
+
+class LLMTestRequest(BaseModel):
+    llm_base_url: str | None = None
+    llm_model: str | None = None
+    llm_api_key: str | None = None
+
+
+class LLMTestResponse(BaseModel):
+    success: bool
+    message: str

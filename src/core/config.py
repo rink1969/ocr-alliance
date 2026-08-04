@@ -97,6 +97,44 @@ class Settings(BaseSettings):
             return "windows"
         return machine if system == "linux" else system
 
+    def _coerce_field(self, field_name: str, raw: str) -> object:
+        """Convert a raw string value to the field's declared type."""
+        annotation = self.__class__.model_fields[field_name].annotation
+        origin = getattr(annotation, "__origin__", None)
+        if origin is not None:
+            args = getattr(annotation, "__args__", ())
+            for arg in args:
+                if arg is not type(None):
+                    annotation = arg
+                    break
+        if annotation is int:
+            return int(raw)
+        if annotation is float:
+            return float(raw)
+        if annotation is bool:
+            return raw.lower() in ("true", "1", "yes", "on")
+        return raw
+
+    def reload(self) -> None:
+        """Reload settings from the .env file managed by settings_manager."""
+        from src.core.settings_manager import read_env
+
+        env_to_field = {
+            "API_HOST": "api_host",
+            "API_PORT": "api_port",
+            "AUTO_DOWNLOAD_MODELS": "auto_download_models",
+            "LLM_BASE_URL": "llm_base_url",
+            "LLM_MODEL": "llm_model",
+            "LLM_API_KEY": "llm_api_key",
+            "LLM_TEMPERATURE": "llm_temperature",
+            "LLM_MAX_TOKENS": "llm_max_tokens",
+            "LLM_TIMEOUT": "llm_timeout",
+        }
+        env_vars = read_env()
+        for env_name, field_name in env_to_field.items():
+            if env_name in env_vars:
+                setattr(self, field_name, self._coerce_field(field_name, env_vars[env_name]))
+
     def ensure_dirs(self) -> None:
         """Create required directories if they don't exist."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
