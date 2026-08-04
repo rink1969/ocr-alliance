@@ -70,7 +70,7 @@ def build() -> None:
     for imp in hidden_imports:
         cmd.extend(["--hidden-import", imp])
 
-    for package in ("pythonnet", "webview"):
+    for package in ("pythonnet", "webview", "modelscope"):
         cmd.extend(["--collect-all", package])
 
     if system == "Darwin":

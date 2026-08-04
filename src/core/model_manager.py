@@ -127,7 +127,7 @@ class ModelManager:
         logger.info("Downloading model %s from %s to %s", name, repo_id, local_dir)
 
         try:
-            from modelscope import snapshot_download
+            from modelscope.hub.snapshot_download import snapshot_download
 
             snapshot_download(repo_id, local_dir=str(local_dir))
             if self.is_model_ready(name):
