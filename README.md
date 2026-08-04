@@ -39,6 +39,15 @@ git push origin v0.1.0
 - Windows x86_64 (`ocr-alliance-windows-x86_64.zip`)
 - macOS arm64 (`ocr-alliance-macos-arm64.zip`)
 
+## 日志排查
+
+如果启动后没有反应，可以查看日志文件定位问题：
+
+- 源码运行：`data/ocr_alliance.log`
+- 二进制包：可执行文件所在目录下的 `data/ocr_alliance.log`
+
+日志采用滚动保留，最多保留 3 个历史文件。
+
 ## 当前状态
 
-已完成基础桌面应用框架、FastAPI 后端、任务调度与持久化、Web 前端骨架、OCR 适配器接口、LLM 统合逻辑、端到端流水线测试，以及跨平台二进制构建工作流。
+已完成基础桌面应用框架、FastAPI 后端、任务调度与持久化、Web 前端骨架、OCR 适配器接口、LLM 统合逻辑、端到端流水线测试、跨平台二进制构建工作流，以及模型自动下载与日志持久化。

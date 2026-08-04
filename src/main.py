@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import logging
 import socket
 import sys
 import threading
 import time
+import traceback
 import webbrowser
 from pathlib import Path
 
@@ -20,6 +22,9 @@ if str(PROJECT_ROOT) not in sys.path:
 
 from src.api.routes import router
 from src.core.config import settings
+from src.core.logging_config import setup_logging
+
+logger = logging.getLogger(__name__)
 
 
 def find_free_port(host: str = "127.0.0.1", start: int = 18080) -> int:
@@ -55,7 +60,7 @@ def _run_webview(url: str) -> bool:
     try:
         import webview
     except Exception as exc:  # noqa: BLE001
-        print(f"pywebview import failed: {exc}")
+        logger.warning("pywebview import failed: %s", exc)
         return False
 
     try:
@@ -77,42 +82,49 @@ def _run_webview(url: str) -> bool:
         webview.start(debug=False)
         return True
     except Exception as exc:  # noqa: BLE001
-        print(f"pywebview start failed: {exc}")
+        logger.warning("pywebview start failed: %s", exc)
         return False
 
 
 def _run_browser_fallback(url: str) -> None:
     """Open the app in the system default browser and keep the server alive."""
-    print("Falling back to system default browser.")
+    logger.info("Falling back to system default browser.")
     webbrowser.open(url)
-    print(f"OCR Alliance is running in your browser at {url}")
-    print("Press Ctrl+C to stop.")
+    logger.info("OCR Alliance is running in your browser at %s", url)
     try:
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
-        print("\nShutting down.")
+        logger.info("Shutting down.")
 
 
 def main() -> None:
     """Entry point: ensure dirs, start server, open webview or browser."""
-    settings.ensure_dirs()
+    setup_logging()
 
-    host = settings.api_host
-    port = settings.api_port or find_free_port(host)
+    try:
+        settings.ensure_dirs()
 
-    server_thread = threading.Thread(
-        target=run_server,
-        args=(host, port),
-        daemon=True,
-    )
-    server_thread.start()
+        host = settings.api_host
+        port = settings.api_port or find_free_port(host)
 
-    url = f"http://{host}:{port}"
-    print(f"OCR Alliance server started at {url}")
+        server_thread = threading.Thread(
+            target=run_server,
+            args=(host, port),
+            daemon=True,
+        )
+        server_thread.start()
 
-    if not _run_webview(url):
-        _run_browser_fallback(url)
+        url = f"http://{host}:{port}"
+        logger.info("OCR Alliance server started at %s", url)
+
+        if not _run_webview(url):
+            _run_browser_fallback(url)
+    except Exception:
+        logger.exception("Fatal error during startup")
+        # Print to stderr as a last resort in case logging failed.
+        traceback.print_exc()
+        raise
 
 
 if __name__ == "__main__":
