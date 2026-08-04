@@ -44,6 +44,9 @@ def build() -> None:
         "clr",
         "webview",
         "pythonnet",
+        "transformers.models.auto.modeling_auto",
+        "transformers.models.auto.processing_auto",
+        "transformers.models.auto.tokenization_auto",
     ]
 
     cmd: list[str] = [
@@ -70,7 +73,7 @@ def build() -> None:
     for imp in hidden_imports:
         cmd.extend(["--hidden-import", imp])
 
-    for package in ("pythonnet", "webview", "modelscope"):
+    for package in ("pythonnet", "webview", "modelscope", "transformers"):
         cmd.extend(["--collect-all", package])
 
     if system == "Darwin":
