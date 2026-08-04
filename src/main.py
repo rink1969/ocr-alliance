@@ -8,6 +8,7 @@ import sys
 import threading
 import time
 import traceback
+import urllib.request
 import webbrowser
 from pathlib import Path
 
@@ -52,7 +53,35 @@ def create_app() -> FastAPI:
 def run_server(host: str, port: int) -> None:
     """Run uvicorn server in a background thread."""
     app = create_app()
-    uvicorn.run(app, host=host, port=port, log_level="info", access_log=False)
+    try:
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level="info",
+            access_log=False,
+            log_config=None,
+            loop="asyncio",
+        )
+    except Exception:
+        logger.exception("Uvicorn server failed")
+        raise
+
+
+def wait_for_server(url: str, timeout: float = 10.0) -> bool:
+    """Wait until the local server is accepting requests."""
+    deadline = time.time() + timeout
+    last_error = ""
+    while time.time() < deadline:
+        try:
+            with urllib.request.urlopen(url, timeout=1.0) as resp:
+                if resp.status == 200:
+                    return True
+        except Exception as exc:  # noqa: BLE001
+            last_error = str(exc)
+        time.sleep(0.2)
+    logger.warning("Server readiness check timed out: %s", last_error)
+    return False
 
 
 def _run_webview(url: str) -> bool:
@@ -116,7 +145,13 @@ def main() -> None:
         server_thread.start()
 
         url = f"http://{host}:{port}"
-        logger.info("OCR Alliance server started at %s", url)
+        logger.info("OCR Alliance server starting at %s", url)
+
+        if not wait_for_server(url):
+            logger.error("Server did not become ready within timeout")
+            return
+
+        logger.info("OCR Alliance server is ready at %s", url)
 
         if not _run_webview(url):
             _run_browser_fallback(url)
