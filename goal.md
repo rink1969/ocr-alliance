@@ -11,7 +11,7 @@
 
 ## 模型
 应用内置三个目前最好的OCR模型：
-1. PaddleOCR-VL-1.6
+1. RapidOCR
 2. HunyuanOCR
 3. GLM-OCR
 

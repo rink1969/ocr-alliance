@@ -17,7 +17,7 @@ from src.ocr.base import OCRAdapter
 class MockOCRAdapter(OCRAdapter):
     """Fake OCR adapter for testing."""
 
-    name = "paddleocr"
+    name = "rapidocr"
     display_name = "Mock OCR"
 
     def __init__(self, text: str) -> None:
@@ -71,10 +71,10 @@ def test_scheduler_processes_image_and_writes_outputs() -> None:
         task = db.get_task(str(input_dir), str(output_dir), rel)
         assert task is not None
         assert task.status == TaskStatus.DONE
-        assert task.results_json.get("paddleocr") == mock_text
+        assert task.results_json.get("rapidocr") == mock_text
         assert task.results_json.get("unified") == unified_text
 
-        paddle_path = output_dir / (img_path.stem + ".paddleocr.txt")
+        rapid_path = output_dir / (img_path.stem + ".rapidocr.txt")
         unified_path = output_dir / (img_path.stem + ".unified.txt")
-        assert paddle_path.read_text(encoding="utf-8") == mock_text
+        assert rapid_path.read_text(encoding="utf-8") == mock_text
         assert unified_path.read_text(encoding="utf-8") == unified_text

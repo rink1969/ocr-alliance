@@ -7,10 +7,13 @@ model needs to be downloaded.
 
 from __future__ import annotations
 
+import logging
 from pathlib import Path
 
 from src.core.config import settings
 from src.ocr.base import OCRAdapter
+
+logger = logging.getLogger(__name__)
 
 
 class HunyuanOCRAdapter(OCRAdapter):
@@ -48,23 +51,42 @@ class HunyuanOCRAdapter(OCRAdapter):
         if not self._has_model_files():
             raise RuntimeError(self.setup_hint())
 
-        # Lazy import keeps import-time dependencies small.
         from PIL import Image
-        from transformers import AutoModelForVision2Seq, AutoProcessor
 
         if self._processor is None or self._model is None:
-            self._processor = AutoProcessor.from_pretrained(
-                str(settings.hunyuan_model_dir), trust_remote_code=True
-            )
-            self._model = AutoModelForVision2Seq.from_pretrained(
-                str(settings.hunyuan_model_dir),
-                trust_remote_code=True,
-                device_map="auto",
-            )
+            # Try the dedicated HunyuanVL class first; fall back to the generic
+            # Auto classes if the checkpoint does not expose it.
+            try:
+                from transformers import (
+                    HunyuanProcessor,
+                    HunYuanVLForConditionalGeneration,
+                )
+
+                self._processor = HunyuanProcessor.from_pretrained(
+                    str(settings.hunyuan_model_dir), trust_remote_code=True
+                )
+                self._model = HunYuanVLForConditionalGeneration.from_pretrained(
+                    str(settings.hunyuan_model_dir),
+                    trust_remote_code=True,
+                    device_map="auto",
+                )
+            except (ImportError, AttributeError, ValueError) as first_exc:
+                logger.warning(
+                    "HunyuanVL dedicated class not available (%s), trying Auto classes",
+                    first_exc,
+                )
+                from transformers import AutoModelForVision2Seq, AutoProcessor
+
+                self._processor = AutoProcessor.from_pretrained(
+                    str(settings.hunyuan_model_dir), trust_remote_code=True
+                )
+                self._model = AutoModelForVision2Seq.from_pretrained(
+                    str(settings.hunyuan_model_dir),
+                    trust_remote_code=True,
+                    device_map="auto",
+                )
 
         image = Image.open(image_path).convert("RGB")
-        # HunyuanOCR exposes a chat/generate interface; the exact signature
-        # depends on the published checkpoint. We use a generic prompt here.
         prompt = "识别图片中的全部文字，保留排版："
         inputs = self._processor(images=image, text=prompt, return_tensors="pt")
         inputs = inputs.to(self._model.device)

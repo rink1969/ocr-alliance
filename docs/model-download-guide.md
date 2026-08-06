@@ -10,10 +10,12 @@ OCR Alliance 首次启动时会自动检测 OCR 模型是否存在。如果缺�
 
 ```
 models/
-├── paddleocr-vl-1.6/
+├── rapidocr/
 ├── hunyuanocr/
 └── glm-ocr/
 ```
+
+> 注：`rapidocr` 的 ONNX 模型已内置在 `rapidocr` Python 包中，不需要额外下载；该目录仅作保留。`hunyuanocr` 和 `glm-ocr` 需要下载 VLM 权重。
 
 > 如果你下载的是 GitHub Release 的二进制包，`models/` 位于可执行文件所在目录；如果你从源码运行，`models/` 位于项目根目录。
 
@@ -23,7 +25,6 @@ models/
 
 | 模型 | 魔搭社区地址 |
 |------|-------------|
-| PaddleOCR-VL-1.6 | <https://modelscope.cn/models/PaddlePaddle/PaddleOCR-VL-1.6> |
 | HunyuanOCR | <https://modelscope.cn/models/Tencent-Hunyuan/HunyuanOCR> |
 | GLM-OCR | <https://modelscope.cn/models/ZhipuAI/GLM-OCR> |
 
@@ -42,13 +43,6 @@ AUTO_DOWNLOAD_MODELS=false
 ## 手动下载
 
 如果你选择手动下载，可以从魔搭社区或 Hugging Face 获取模型文件，放入对应目录。
-
-### PaddleOCR-VL-1.6
-
-- 魔搭社区：<https://modelscope.cn/models/PaddlePaddle/PaddleOCR-VL-1.6>
-- Hugging Face：<https://huggingface.co/PaddlePaddle/PaddleOCR-VL-1.6>
-
-放入：`models/paddleocr-vl-1.6/`
 
 ### HunyuanOCR
 

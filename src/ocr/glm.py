@@ -48,21 +48,20 @@ class GLMOCRAdapter(OCRAdapter):
             raise RuntimeError(self.setup_hint())
 
         from PIL import Image
-        from transformers import AutoModelForVision2Seq, AutoProcessor
+        from transformers import AutoModelForImageTextToText, AutoProcessor
 
         if self._processor is None or self._model is None:
             self._processor = AutoProcessor.from_pretrained(
                 str(settings.glm_model_dir), trust_remote_code=True
             )
-            self._model = AutoModelForVision2Seq.from_pretrained(
+            self._model = AutoModelForImageTextToText.from_pretrained(
                 str(settings.glm_model_dir),
                 trust_remote_code=True,
                 device_map="auto",
             )
 
         image = Image.open(image_path).convert("RGB")
-        # GLM-OCR is a VLM; the exact prompt format depends on the checkpoint.
-        # We use a generic instruction that works for most VLMs.
+        # GLM-OCR uses a chat-style prompt with the image encoded by the processor.
         prompt = "识别图片中的全部文字，保留排版："
         inputs = self._processor(images=image, text=prompt, return_tensors="pt")
         inputs = inputs.to(self._model.device)

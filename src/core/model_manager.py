@@ -14,7 +14,7 @@ from src.core.config import settings
 logger = logging.getLogger(__name__)
 
 MODEL_REPOS: dict[str, str] = {
-    "paddleocr": "PaddlePaddle/PaddleOCR-VL-1.6",
+    "rapidocr": "RapidAI/RapidOCR",
     "hunyuan": "Tencent-Hunyuan/HunyuanOCR",
     "glm": "ZhipuAI/GLM-OCR",
 }
@@ -52,6 +52,44 @@ class ModelState:
         }
 
 
+class _FileProgress:
+    def __init__(
+        self, name: str, manager: ModelManager, filename: str, file_size: int
+    ) -> None:
+        self.name = name
+        self.manager = manager
+        self.filename = filename
+        self.file_size = file_size
+        self._seen = 0
+
+    def update(self, size: int) -> None:
+        self._seen = size
+        self.manager._update_file_progress(
+            self.name, self.filename, self.file_size, size
+        )
+
+    def end(self) -> None:
+        pass
+
+
+def _make_progress_callback_class(name: str, manager: ModelManager) -> type:
+    """Create a ModelScope ProgressCallback subclass bound to this model."""
+    from modelscope.hub.callback import ProgressCallback
+
+    class _Callback(ProgressCallback):
+        def __init__(self, filename: str, file_size: int) -> None:
+            super().__init__(filename, file_size)
+            self._progress = _FileProgress(name, manager, filename, file_size)
+
+        def update(self, size: int) -> None:
+            self._progress.update(size)
+
+        def end(self) -> None:
+            self._progress.end()
+
+    return _Callback
+
+
 class ModelManager:
     """Detect missing OCR models and download them from ModelScope."""
 
@@ -61,11 +99,12 @@ class ModelManager:
             name: ModelState(name=name) for name in MODEL_REPOS
         }
         self._threads: dict[str, threading.Thread] = {}
+        self._file_progress: dict[str, dict[str, tuple[int, int]]] = {}
 
     def model_dir(self, name: str) -> Path:
         """Return the local directory for a given model."""
         mapping = {
-            "paddleocr": settings.paddleocr_model_dir,
+            "rapidocr": settings.rapidocr_model_dir,
             "hunyuan": settings.hunyuan_model_dir,
             "glm": settings.glm_model_dir,
         }
@@ -75,6 +114,11 @@ class ModelManager:
 
     def is_model_ready(self, name: str) -> bool:
         """Return True when the model directory contains a config and weights."""
+        # RapidOCR bundles its own models inside the package; no local
+        # download directory is required.
+        if name == "rapidocr":
+            return True
+
         directory = self.model_dir(name)
         if not directory.is_dir():
             return False
@@ -117,19 +161,48 @@ class ModelManager:
             if total_bytes is not None:
                 state.total_bytes = total_bytes
 
+    def _update_file_progress(
+        self, name: str, filename: str, file_size: int, downloaded: int
+    ) -> None:
+        """Update aggregate progress for an active download.
+
+        ``_file_progress`` maps ``model_name -> {filename: (file_size, downloaded)}``.
+        The aggregate ``downloaded_bytes`` and ``total_bytes`` are recomputed on
+        every update so that the UI can show real progress even when multiple
+        files are downloaded concurrently.
+        """
+        with self._lock:
+            files = self._file_progress.setdefault(name, {})
+            files[filename] = (file_size, downloaded)
+            total = sum(size for size, _ in files.values())
+            done = sum(dl for _, dl in files.values())
+            self._states[name].total_bytes = total
+            self._states[name].downloaded_bytes = done
+
     def _download(self, name: str) -> None:
         """Download a single model in a background thread."""
         repo_id = MODEL_REPOS[name]
         local_dir = self.model_dir(name)
         local_dir.mkdir(parents=True, exist_ok=True)
 
-        self._update_state(name, DownloadStatus.DOWNLOADING, f"正在从 {repo_id} 下载...")
+        self._update_state(
+            name,
+            DownloadStatus.DOWNLOADING,
+            f"正在从 {repo_id} 下载...",
+            downloaded_bytes=0,
+            total_bytes=None,
+        )
         logger.info("Downloading model %s from %s to %s", name, repo_id, local_dir)
 
         try:
             from modelscope.hub.snapshot_download import snapshot_download
 
-            snapshot_download(repo_id, local_dir=str(local_dir))
+            callback_cls = _make_progress_callback_class(name, self)
+            snapshot_download(
+                repo_id,
+                local_dir=str(local_dir),
+                progress_callbacks=[callback_cls],
+            )
             if self.is_model_ready(name):
                 self._update_state(name, DownloadStatus.DONE, "下载完成")
                 logger.info("Model %s download complete", name)

@@ -56,7 +56,7 @@ class Settings(BaseSettings):
         ".tif",
     )
     output_suffixes: dict[str, str] = {
-        "paddleocr": ".paddleocr.txt",
+        "rapidocr": ".rapidocr.txt",
         "hunyuan": ".hunyuan.txt",
         "glm": ".glm.txt",
         "unified": ".unified.txt",
@@ -64,8 +64,8 @@ class Settings(BaseSettings):
 
     # Model directories
     @property
-    def paddleocr_model_dir(self) -> Path:
-        return self.models_dir / "paddleocr-vl-1.6"
+    def rapidocr_model_dir(self) -> Path:
+        return self.models_dir / "rapidocr"
 
     @property
     def hunyuan_model_dir(self) -> Path:
@@ -139,7 +139,7 @@ class Settings(BaseSettings):
         """Create required directories if they don't exist."""
         self.data_dir.mkdir(parents=True, exist_ok=True)
         self.models_dir.mkdir(parents=True, exist_ok=True)
-        for sub in ("paddleocr-vl-1.6", "hunyuanocr", "glm-ocr"):
+        for sub in ("rapidocr", "hunyuanocr", "glm-ocr"):
             (self.models_dir / sub).mkdir(parents=True, exist_ok=True)
 
 

@@ -7,7 +7,7 @@ OCR Alliance 是一款带 WebUI 的跨平台桌面应用，用于批量 OCR 识�
 ### 1.1 核心需求
 
 - 批量处理输入文件夹中的图片，输出到指定文件夹并保持目录结构。
-- 每个图片生成 4 个 OCR 结果文件：分别来自 PaddleOCR-VL-1.6、HunyuanOCR、GLM-OCR，以及 LLM 统合结果。
+- 每个图片生成 4 个 OCR 结果文件：分别来自 RapidOCR、HunyuanOCR、GLM-OCR，以及 LLM 统合结果。
 - 支持处理进度持久化，应用重启后可断点续传。
 - 结果可视化：左侧目录树、右侧展示原图与三模型结果及统合结果，并高亮差异。
 - 发布 Windows(x86)、macOS(arm)、Linux(x86) 三个平台的二进制包。
@@ -57,9 +57,9 @@ OCR Alliance 是一款带 WebUI 的跨平台桌面应用，用于批量 OCR 识�
                            │ 适配器调用
 ┌──────────────────────────▼────────────────────────────────────┐
 │                      OCR 模型推理层                              │
-│   PaddleOCR-VL-1.6      HunyuanOCR         GLM-OCR              │
-│   (paddlepaddle /       (transformers /     (transformers /     │
-│    transformers)          vLLM 可选)        vLLM 可选)          │
+│   RapidOCR               HunyuanOCR         GLM-OCR              │
+│   (rapidocr /           (transformers /     (transformers /     │
+│    onnxruntime)           vLLM 可选)        vLLM 可选)          │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -69,9 +69,9 @@ OCR Alliance 是一款带 WebUI 的跨平台桌面应用，用于批量 OCR 识�
 
 | 模型 | 参数规模 | 默认推理方式 | 可选加速 | 模型目录 |
 |------|---------|-------------|---------|---------|
-| PaddleOCR-VL-1.6 | 0.9B | `paddleocr` 官方 Python API + `paddlepaddle` | vLLM 服务 | `models/paddleocr-vl-1.6/` |
+| RapidOCR | - | `rapidocr` Python API + ONNX Runtime | - | 内置模型，无需额外下载 |
 | HunyuanOCR | 1B | `transformers` (`HunYuanVLForConditionalGeneration`) | vLLM / llama.cpp | `models/hunyuanocr/` |
-| GLM-OCR | 0.9B | `transformers` 开发版 + `AutoModelForImageTextToText` | vLLM / SGLang / Ollama | `models/glm-ocr/` |
+| GLM-OCR | 0.9B | `transformers` (`AutoModelForImageTextToText`) | vLLM / SGLang / Ollama | `models/glm-ocr/` |
 
 ### 4.1 推理后端选择
 
@@ -103,7 +103,7 @@ OCR Alliance 是一款带 WebUI 的跨平台桌面应用，用于批量 OCR 识�
 请综合三个结果，输出最准确、最完整的文本，并尽量保留原始排版。
 对于三个结果不一致的地方，请根据上下文判断最可信的内容。
 
-[PaddleOCR-VL-1.6 结果]
+[RapidOCR 结果]
 ...
 
 [HunyuanOCR 结果]
@@ -128,7 +128,7 @@ OCR Alliance 是一款带 WebUI 的跨平台桌面应用，用于批量 OCR 识�
 - **输入**：用户选择的文件夹，应用递归扫描图片文件（默认支持 `*.jpg`, `*.jpeg`, `*.png`, `*.tiff`, `*.bmp`, `*.webp`）。
 - **输出**：用户选择的文件夹，保持与输入相同的相对目录结构。
 - **结果文件命名**：每个输入图片生成 4 个文本文件，后缀分别为模型名：
-  - `{原文件名}.paddleocr.txt`
+  - `{原文件名}.rapidocr.txt`
   - `{原文件名}.hunyuan.txt`
   - `{原文件名}.glm.txt`
   - `{原文件名}.unified.txt`
@@ -161,7 +161,7 @@ CREATE TABLE tasks (
 - **左侧目录树**：展示输入文件夹结构，节点显示处理状态（未处理 / 处理中 / 完成 / 失败）。用户点击节点切换文件。
 - **右侧内容区**：
   - 上方：原始图片预览。
-  - 下方：四个结果卡片/列，分别为 PaddleOCR-VL-1.6、HunyuanOCR、GLM-OCR、LLM 统合结果。
+  - 下方：四个结果卡片/列，分别为 RapidOCR、HunyuanOCR、GLM-OCR、LLM 统合结果。
   - 不一致处使用 `diff-match-patch` 高亮显示。
 
 ### 7.2 配置面板
@@ -214,7 +214,7 @@ ocr-alliance/
 │   │   └── file_utils.py       # 目录扫描、路径处理
 │   ├── ocr/
 │   │   ├── base.py             # OCR 模型适配器基类
-│   │   ├── paddleocr.py        # PaddleOCR-VL-1.6 适配器
+│   │   ├── rapidocr.py        # RapidOCR 适配器
 │   │   ├── hunyuanocr.py       # HunyuanOCR 适配器
 │   │   ├── glmocr.py           # GLM-OCR 适配器
 │   │   └── registry.py         # 模型注册与选择
@@ -226,7 +226,7 @@ ocr-alliance/
 │       ├── js/
 │       └── assets/
 ├── models/                     # 运行时模型目录（用户下载后放置，不提交到 Git）
-│   ├── paddleocr-vl-1.6/
+│   ├── rapidocr/               # RapidOCR 占位目录（模型已内置）
 │   ├── hunyuanocr/
 │   └── glm-ocr/
 ├── docs/
@@ -256,19 +256,21 @@ aiofiles
 transformers>=4.40.0
 torch>=2.0.0
 huggingface-hub
-paddleocr[doc-parser]>=3.6.0
-paddlepaddle                  # 或 paddlepaddle-gpu，按平台选择
+modelscope
+rapidocr>=3.0.0
+opencv-python
+onnxruntime
 openai
 ```
 
-> **注意**：`PaddlePaddle`、`PyTorch`、`transformers` 之间存在版本兼容风险，实现阶段需在隔离环境（venv/conda）中充分测试。若冲突难以解决，可将 PaddleOCR 推理拆分为独立子进程，通过本地 HTTP/IPC 调用。
+> **注意**：`HunyuanOCR`、`GLM-OCR` 依赖 `PyTorch` 与 `transformers`，请在隔离环境（venv/conda）中充分测试版本兼容性。`RapidOCR` 基于 ONNX Runtime，不依赖 PyTorch/PaddlePaddle，显著降低基础运行负担。
 
 ## 11. 风险与应对
 
 | 风险 | 影响 | 应对策略 |
 |------|------|---------|
-| 依赖冲突（Paddle / PyTorch / transformers） | 高 | 隔离环境测试；必要时将 PaddleOCR 拆分为独立子进程。 |
-| 打包体积过大 | 中 | 仅打包必要依赖；模型权重外置。 |
+| 依赖冲突（PyTorch / transformers / Hunyuan、GLM 模型） | 高 | 隔离环境测试；RapidOCR 不依赖 PyTorch，可降低基础冲突风险。 |
+| 打包体积过大 | 中 | 仅打包必要依赖；模型权重外置；RapidOCR 模型内置在包中。 |
 | 无 GPU 时 CPU 推理极慢 | 中 | 启动时检测并提示用户；提供量化模型/vLLM 可选配置。 |
 | 模型官方接口变更 | 中 | 通过适配器层隔离具体调用；持续关注官方 release note。 |
 | LLM API 调用失败或限流 | 中 | 失败重试 + 指数退避；保存中间 OCR 结果。 |
@@ -278,7 +280,7 @@ openai
 
 1. **阶段 1 — 基础骨架**：搭建 FastAPI + pywebview 最小可运行应用；实现目录扫描与 SQLite 任务表。
 2. **阶段 2 — 单模型打通**：先集成一个 OCR 模型（如 HunyuanOCR），实现单张图片识别与结果保存。
-3. **阶段 3 — 三模型集成**：抽象适配器层，集成 PaddleOCR-VL-1.6 与 GLM-OCR。
+3. **阶段 3 — 三模型集成**：抽象适配器层，集成 RapidOCR 与 GLM-OCR。
 4. **阶段 4 — LLM 统合**：接入 OpenAI 兼容 API，实现统合与差异高亮。
 5. **阶段 5 — UI 完善**：目录树、图片预览、结果对比、配置面板、实时日志。
 6. **阶段 6 — 打包与 CI**：PyInstaller 本地验证 + GitHub Actions 三平台构建。

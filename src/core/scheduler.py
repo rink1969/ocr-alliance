@@ -43,6 +43,9 @@ class Scheduler:
 
         self.input_dir = input_dir
         self.output_dir = output_dir
+        # Reset tasks left in 'processing' from a previous run so they are
+        # picked up again instead of being stranded.
+        db.reset_incomplete(input_dir, output_dir)
         self._stop_event.clear()
         self.state = ProcessingState.RUNNING
         self._thread = threading.Thread(target=self._run, daemon=True)

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -16,7 +17,7 @@ logger = logging.getLogger(__name__)
 class OCRInputs:
     """OCR results from the three engines."""
 
-    paddleocr: str = ""
+    rapidocr: str = ""
     hunyuan: str = ""
     glm: str = ""
 
@@ -44,8 +45,8 @@ class LLMUnifier:
     @staticmethod
     def _build_prompt(image_name: str, inputs: OCRInputs) -> str:
         sections = []
-        if inputs.paddleocr:
-            sections.append(f"【PaddleOCR-VL-1.6 识别结果】\n{inputs.paddleocr}")
+        if inputs.rapidocr:
+            sections.append(f"【RapidOCR 识别结果】\n{inputs.rapidocr}")
         if inputs.hunyuan:
             sections.append(f"【HunyuanOCR 识别结果】\n{inputs.hunyuan}")
         if inputs.glm:
@@ -73,13 +74,32 @@ class LLMUnifier:
             raise RuntimeError("没有可用的 OCR 结果用于统合")
 
         client = self._get_client()
-        response = client.chat.completions.create(
-            model=settings.llm_model,
-            messages=[
-                {"role": "system", "content": "你是一个专业的 OCR 后处理助手。"},
-                {"role": "user", "content": prompt},
-            ],
-            temperature=settings.llm_temperature,
-            max_tokens=settings.llm_max_tokens,
-        )
-        return response.choices[0].message.content or ""
+        max_retries = 3
+        base_delay = 1.0
+        last_error: Exception | None = None
+
+        for attempt in range(max_retries):
+            try:
+                response = client.chat.completions.create(
+                    model=settings.llm_model,
+                    messages=[
+                        {"role": "system", "content": "你是一个专业的 OCR 后处理助手。"},
+                        {"role": "user", "content": prompt},
+                    ],
+                    temperature=settings.llm_temperature,
+                    max_tokens=settings.llm_max_tokens,
+                )
+                return response.choices[0].message.content or ""
+            except Exception as exc:  # noqa: BLE001
+                last_error = exc
+                logger.warning(
+                    "LLM unification failed (attempt %d/%d): %s",
+                    attempt + 1,
+                    max_retries,
+                    exc,
+                )
+                if attempt < max_retries - 1:
+                    delay = base_delay * (2 ** attempt)
+                    time.sleep(delay)
+
+        raise RuntimeError(f"LLM 统合失败，已重试 {max_retries} 次: {last_error}")

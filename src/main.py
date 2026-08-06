@@ -117,7 +117,18 @@ def _run_webview(url: str) -> bool:
         def open_external(target_url: str) -> None:
             webbrowser.open(target_url)
 
-        window.expose(get_platform, open_external)
+        def open_directory_dialog(title: str = "选择目录") -> str:
+            """Open a native directory picker and return the selected path."""
+            result = window.create_file_dialog(
+                webview.FileDialog.FOLDER,
+                directory="",
+                allow_multiple=False,
+            )
+            if result and isinstance(result, (list, tuple)) and len(result) > 0:
+                return str(result[0])
+            return ""
+
+        window.expose(get_platform, open_external, open_directory_dialog)
         webview.start(debug=False)
         return True
     except Exception as exc:  # noqa: BLE001

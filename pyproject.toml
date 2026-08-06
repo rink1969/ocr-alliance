@@ -24,6 +24,9 @@ dependencies = [
     "transformers>=4.40.0",
     "huggingface-hub>=0.21.0",
     "modelscope>=1.18.0",
+    "rapidocr>=3.0.0",
+    "opencv-python>=4.8",
+    "onnxruntime",
 ]
 
 [project.optional-dependencies]

@@ -64,4 +64,4 @@ def test_models_status_endpoint() -> None:
     assert "all_ready" in data
     assert len(data["models"]) == 3
     names = {m["name"] for m in data["models"]}
-    assert names == {"paddleocr", "hunyuan", "glm"}
+    assert names == {"rapidocr", "hunyuan", "glm"}

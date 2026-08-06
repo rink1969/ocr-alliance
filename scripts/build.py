@@ -36,7 +36,8 @@ def build() -> None:
         "src.core.database",
         "src.core.scheduler",
         "src.core.file_utils",
-        "src.ocr.paddleocr",
+        "src.core.model_manager",
+        "src.ocr.rapidocr",
         "src.ocr.hunyuan",
         "src.ocr.glm",
         "src.ocr.registry",
@@ -44,9 +45,18 @@ def build() -> None:
         "clr",
         "webview",
         "pythonnet",
+        "rapidocr",
+        "cv2",
+        "onnxruntime",
+        "PIL",
+        "PIL._imagingtk",
+        "PIL._tkinter_finder",
+        "transformers",
         "transformers.models.auto.modeling_auto",
         "transformers.models.auto.processing_auto",
         "transformers.models.auto.tokenization_auto",
+        "transformers.models.hunyuanvl",
+        "transformers.models.glm",
     ]
 
     cmd: list[str] = [
@@ -73,7 +83,7 @@ def build() -> None:
     for imp in hidden_imports:
         cmd.extend(["--hidden-import", imp])
 
-    for package in ("pythonnet", "webview", "modelscope", "transformers"):
+    for package in ("pythonnet", "webview", "modelscope", "transformers", "rapidocr", "cv2", "onnxruntime"):
         cmd.extend(["--collect-all", package])
 
     if system == "Darwin":

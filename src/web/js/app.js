@@ -17,7 +17,7 @@ const els = {
     tree: document.getElementById('tree'),
     dirCount: document.getElementById('dir-count'),
     imagePreview: document.getElementById('image-preview'),
-    resultPaddle: document.getElementById('result-paddleocr'),
+    resultRapidocr: document.getElementById('result-rapidocr'),
     resultHunyuan: document.getElementById('result-hunyuan'),
     resultGlm: document.getElementById('result-glm'),
     resultUnified: document.getElementById('result-unified'),
@@ -301,10 +301,27 @@ function updateModelProgress(progress) {
 }
 
 async function onScan() {
-    // Placeholder: in production, use a file picker via pywebview or a settings panel
-    const inputDir = prompt('请输入输入目录绝对路径:', state.inputDir || '/tmp/ocr-input');
-    const outputDir = prompt('请输入输出目录绝对路径:', state.outputDir || '/tmp/ocr-output');
-    if (!inputDir || !outputDir) return;
+    let inputDir = '';
+    let outputDir = '';
+
+    if (window.pywebview && window.pywebview.api && window.pywebview.api.open_directory_dialog) {
+        try {
+            inputDir = await window.pywebview.api.open_directory_dialog('选择输入目录');
+        } catch (e) {
+            console.warn('Directory picker failed', e);
+        }
+        if (!inputDir) return;
+        try {
+            outputDir = await window.pywebview.api.open_directory_dialog('选择输出目录');
+        } catch (e) {
+            console.warn('Directory picker failed', e);
+        }
+        if (!outputDir) return;
+    } else {
+        inputDir = prompt('请输入输入目录绝对路径:', state.inputDir || '/tmp/ocr-input');
+        outputDir = prompt('请输入输出目录绝对路径:', state.outputDir || '/tmp/ocr-output');
+        if (!inputDir || !outputDir) return;
+    }
 
     state.inputDir = inputDir.trim();
     state.outputDir = outputDir.trim();
@@ -398,7 +415,7 @@ function selectTask(task) {
 
     // Load result texts if available
     const results = task.results_json || {};
-    els.resultPaddle.textContent = results.paddleocr || '-';
+    els.resultRapidocr.textContent = results.rapidocr || '-';
     els.resultHunyuan.textContent = results.hunyuan || '-';
     els.resultGlm.textContent = results.glm || '-';
     els.resultUnified.textContent = results.unified || '-';
